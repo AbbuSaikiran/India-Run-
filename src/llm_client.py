@@ -17,18 +17,16 @@ API_CONFIGS = [
         "base_url": os.getenv("OPENAI_BASE_URL", "https://api.deepseek.com/v1"),
         "model": os.getenv("LLM_MODEL", "deepseek-chat"),
     },
-    # Fallback 1: DeepSeek direct
     {
         "api_key": os.getenv("DEEPSEEK_API_KEY_1", ""),
         "base_url": "https://api.deepseek.com/v1",
         "model": "deepseek-chat",
     },
-    # Fallback 2: Another DeepSeek key
     {
-        "api_key": os.getenv("DEEPSEEK_API_KEY_2", ""),
-        "base_url": "https://api.deepseek.com/v1",
-        "model": "deepseek-chat",
-    },
+        "api_key": os.getenv("GEMINI_API_KEY_1", ""),
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "google/gemini-2.5-flash",
+    }
 ]
 
 def _clean_json(content: str) -> str:
@@ -71,10 +69,9 @@ async def _chat(prompt: str, system: str = "You are an expert AI assistant. Retu
                 return {"_raw_text": raw}
         except Exception as e:
             last_error = str(e)
-            print(f"[LLM] Config {cfg['model']} @ {cfg['base_url']} failed: {e}")
+            # Suppress individual connection error prints to prevent terminal spam during permutation checking
             continue
 
-    print(f"[LLM] All API configs exhausted. Last error: {last_error}")
     return {"_error": last_error or "All API configs failed"}
 
 # ─── Module 1: Resume Text Extraction (NO LLM needed) ────────────────────────
@@ -124,7 +121,6 @@ Resume Text:
 
     # If LLM failed or returned error, do basic heuristic fallback
     if "_error" in result or "_raw_text" in result:
-        print("[LLM] Resume extraction LLM failed, using heuristic fallback")
         result = _heuristic_profile(raw_text)
 
     result["raw_text"] = raw_text
